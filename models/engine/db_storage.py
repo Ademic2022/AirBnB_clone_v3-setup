@@ -83,18 +83,21 @@ class DBStorage:
         """ calls remove()
         """
         self.__session.close()
+
     def get(self, cls, id):
         '''
             Retrieve an obj w/class name and id
         '''
         result = None
         try:
-            objs = self.__session.query(models.classes[cls]).all()
+            cls_object = getattr(models, cls)
+            objs = self.__session.query(cls_object).all()
             for obj in objs:
                 if obj.id == id:
                     result = obj
-        except BaseException:
-            pass
+                    break
+        except Exception as e:
+            print("Error:", e)  #this line is added to see any exceptions raised
         return result
 
     def count(self, cls=None):
