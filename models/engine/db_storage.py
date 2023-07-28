@@ -97,7 +97,7 @@ class DBStorage:
                     result = obj
                     break
         except Exception as e:
-            print("Error:", e) #this line is added to see any exceptions raised
+            print("Error:", e) # this line is added to see exceptions raised
         return result
 
     def count(self, cls=None):
