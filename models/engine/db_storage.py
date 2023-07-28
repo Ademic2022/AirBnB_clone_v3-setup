@@ -104,11 +104,13 @@ class DBStorage:
         cls_counter = 0
 
         if cls is not None:
-            objs = self.__session.query(models.classes[cls]).all()
+            cls_obj = getattr(models, cls)
+            objs = self.__session.query(cls_obj).all()
             cls_counter = len(objs)
         else:
-            for k, v in models.classes.items():
+            for k, v in models.__dict__.items():
                 if k != "BaseModel":
-                    objs = self.__session.query(models.classes[k]).all()
+                    cls_obj = getattr(models, k)
+                    objs = self.__session.query(cls_obj).all()
                     cls_counter += len(objs)
         return cls_counter
