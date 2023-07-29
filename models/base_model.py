@@ -5,7 +5,7 @@ import uuid
 import models
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime
-
+import hashlib
 
 Base = declarative_base()
 
@@ -60,11 +60,14 @@ class BaseModel:
     def save(self):
         """updates the public instance attribute updated_at to current
         """
+        if 'password' in self.__dict__:
+            # Hash the password using MD5
+            self.password = hashlib.md5(self.password.encode()).hexdigest()
         self.updated_at = datetime.now()
         models.storage.new(self)
         models.storage.save()
 
-    def to_dict(self):
+    def to_dict(self, include_password=False):
         """creates dictionary of the class  and returns
         Return:
             returns a dictionary of all the key values in __dict__
@@ -75,6 +78,8 @@ class BaseModel:
         my_dict["updated_at"] = self.updated_at.isoformat()
         if '_sa_instance_state' in my_dict.keys():
             del my_dict['_sa_instance_state']
+        if not include_password and 'password' in my_dict:
+            del my_dict['password']
         return my_dict
 
     def delete(self):
