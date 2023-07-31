@@ -1,180 +1,84 @@
 #!/usr/bin/python3
-""" objects that handle all default RestFul API actions for Places """
-from models.state import State
-from models.city import City
-from models.place import Place
-from models.user import User
-from models.amenity import Amenity
-from models import storage
-from api.v1.views import app_views
-from flask import abort, jsonify, make_response, request
-from flasgger.utils import swag_from
+"""This is the place class"""
+from sqlalchemy.ext.declarative import declarative_base
+from models.base_model import BaseModel, Base
+from sqlalchemy import Column, Table, String, Integer, Float, ForeignKey
+from sqlalchemy.orm import relationship
+from os import getenv
+import models
 
 
-@app_views.route('/cities/<city_id>/places', methods=['GET'],
-                 strict_slashes=False)
-@swag_from('documentation/place/get_places.yml', methods=['GET'])
-def get_places(city_id):
+place_amenity = Table("place_amenity", Base.metadata,
+                      Column("place_id", String(60),
+                             ForeignKey("places.id"),
+                             primary_key=True,
+                             nullable=False),
+                      Column("amenity_id", String(60),
+                             ForeignKey("amenities.id"),
+                             primary_key=True,
+                             nullable=False))
+
+
+class Place(BaseModel, Base):
+    """This is the class for Place
+    Attributes:
+        city_id: city id
+        user_id: user id
+        name: name input
+        description: string of description
+        number_rooms: number of room in int
+        number_bathrooms: number of bathrooms in int
+        max_guest: maximum guest in int
+        price_by_night:: pice for a staying in int
+        latitude: latitude in flaot
+        longitude: longitude in float
+        amenity_ids: list of Amenity ids
     """
-    Retrieves the list of all Place objects of a City
-    """
-    city = storage.get(City, city_id)
+    __tablename__ = "places"
+    __table_args__ = ({'mysql_default_charset': 'latin1'})
+    city_id = Column(String(60), ForeignKey("cities.id"), nullable=False)
+    user_id = Column(String(60), ForeignKey("users.id"), nullable=False)
+    name = Column(String(128), nullable=False)
+    description = Column(String(1024))
+    number_rooms = Column(Integer, nullable=False, default=0)
+    number_bathrooms = Column(Integer, nullable=False, default=0)
+    max_guest = Column(Integer, nullable=False, default=0)
+    price_by_night = Column(Integer, nullable=False, default=0)
+    latitude = Column(Float)
+    longitude = Column(Float)
+    amenity_ids = []
 
-    if not city:
-        abort(404)
+    if getenv("HBNB_TYPE_STORAGE") == "db":
+        reviews = relationship("Review", cascade='all, delete, delete-orphan',
+                               backref="place")
 
-    places = [place.to_dict() for place in city.places]
+        amenities = relationship("Amenity", secondary=place_amenity,
+                                 viewonly=False,
+                                 back_populates="place_amenities")
+    else:
+        @property
+        def reviews(self):
+            """ Returns list of reviews.id """
+            var = models.storage.all()
+            lista = []
+            result = []
+            for key in var:
+                review = key.replace('.', ' ')
+                review = shlex.split(review)
+                if (review[0] == 'Review'):
+                    lista.append(var[key])
+            for elem in lista:
+                if (elem.place_id == self.id):
+                    result.append(elem)
+            return (result)
 
-    return jsonify(places)
+        @property
+        def amenities(self):
+            """ Returns list of amenity ids """
+            return self.amenity_ids
 
-
-@app_views.route('/places/<place_id>', methods=['GET'], strict_slashes=False)
-@swag_from('documentation/place/get_place.yml', methods=['GET'])
-def get_place(place_id):
-    """
-    Retrieves a Place object
-    """
-    place = storage.get(Place, place_id)
-    if not place:
-        abort(404)
-
-    return jsonify(place.to_dict())
-
-
-@app_views.route('/places/<place_id>', methods=['DELETE'],
-                 strict_slashes=False)
-@swag_from('documentation/place/delete_place.yml', methods=['DELETE'])
-def delete_place(place_id):
-    """
-    Deletes a Place Object
-    """
-
-    place = storage.get(Place, place_id)
-
-    if not place:
-        abort(404)
-
-    storage.delete(place)
-    storage.save()
-
-    return make_response(jsonify({}), 200)
-
-
-@app_views.route('/cities/<city_id>/places', methods=['POST'],
-                 strict_slashes=False)
-@swag_from('documentation/place/post_place.yml', methods=['POST'])
-def post_place(city_id):
-    """
-    Creates a Place
-    """
-    city = storage.get(City, city_id)
-
-    if not city:
-        abort(404)
-
-    if not request.get_json():
-        abort(400, description="Not a JSON")
-
-    if 'user_id' not in request.get_json():
-        abort(400, description="Missing user_id")
-
-    data = request.get_json()
-    user = storage.get(User, data['user_id'])
-
-    if not user:
-        abort(404)
-
-    if 'name' not in request.get_json():
-        abort(400, description="Missing name")
-
-    data["city_id"] = city_id
-    instance = Place(**data)
-    instance.save()
-    return make_response(jsonify(instance.to_dict()), 201)
-
-
-@app_views.route('/places/<place_id>', methods=['PUT'], strict_slashes=False)
-@swag_from('documentation/place/put_place.yml', methods=['PUT'])
-def put_place(place_id):
-    """
-    Updates a Place
-    """
-    place = storage.get(Place, place_id)
-
-    if not place:
-        abort(404)
-
-    data = request.get_json()
-    if not data:
-        abort(400, description="Not a JSON")
-
-    ignore = ['id', 'user_id', 'city_id', 'created_at', 'updated_at']
-
-    for key, value in data.items():
-        if key not in ignore:
-            setattr(place, key, value)
-    storage.save()
-    return make_response(jsonify(place.to_dict()), 200)
-
-
-@app_views.route('/places_search', methods=['POST'], strict_slashes=False)
-@swag_from('documentation/place/post_search.yml', methods=['POST'])
-def places_search():
-    """
-    Retrieves all Place objects depending of the JSON in the body
-    of the request
-    """
-
-    if request.get_json() is None:
-        abort(400, description="Not a JSON")
-
-    data = request.get_json()
-
-    if data and len(data):
-        states = data.get('states', None)
-        cities = data.get('cities', None)
-        amenities = data.get('amenities', None)
-
-    if not data or not len(data) or (
-            not states and
-            not cities and
-            not amenities):
-        places = storage.all(Place).values()
-        list_places = []
-        for place in places:
-            list_places.append(place.to_dict())
-        return jsonify(list_places)
-
-    list_places = []
-    if states:
-        states_obj = [storage.get(State, s_id) for s_id in states]
-        for state in states_obj:
-            if state:
-                for city in state.cities:
-                    if city:
-                        for place in city.places:
-                            list_places.append(place)
-
-    if cities:
-        city_obj = [storage.get(City, c_id) for c_id in cities]
-        for city in city_obj:
-            if city:
-                for place in city.places:
-                    if place not in list_places:
-                        list_places.append(place)
-
-    if amenities:
-        if not list_places:
-            list_places = storage.all(Place).values()
-        amenities_obj = [storage.get(Amenity, a_id) for a_id in amenities]
-        list_places = [place for place in list_places
-                       if all([am in place.amenities
-                               for am in amenities_obj])]
-
-    places = []
-    for p in list_places:
-        d = p.to_dict()
-        d.pop('amenities', None)
-        places.append(d)
-
-    return jsonify(places)
+        @amenities.setter
+        def amenities(self, obj=None):
+            """ Appends amenity ids to the attribute """
+            if type(obj) is Amenity and obj.id not in self.amenity_ids:
+                self.amenity_ids.append(obj.id)
