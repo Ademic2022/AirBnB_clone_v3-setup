@@ -3,25 +3,38 @@
     flask with general routes
     routes:
         /status:    display "status":"OK"
-        /stats:     dispaly total for all classes
+        /stats:     display total for all classes
 '''
 from api.v1.views import app_views
 from flask import jsonify
 from models import storage
 
 
-@app_views.route("/status")
+@app_views.route("/status", methods=['GET'])
 def status():
     '''
-        return JSON of OK status
+    Return JSON with status "OK".
+
+    Returns:
+        JSON: {"status": "OK"}
     '''
     return jsonify({'status': 'OK'})
 
 
-@app_views.route("/stats")
+@app_views.route("/stats", methods=['GET'])
 def storage_counts():
     '''
-        return counts of all classes in storage
+    Return counts of all classes in storage.
+
+    Returns:
+        JSON: {
+            "amenities": <count of amenities>,
+            "cities": <count of cities>,
+            "places": <count of places>,
+            "reviews": <count of reviews>,
+            "states": <count of states>,
+            "users": <count of users>
+        }
     '''
     cls_counts = {
         "amenities": storage.count("Amenity"),
