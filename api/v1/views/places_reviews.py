@@ -90,4 +90,3 @@ def update_review(review_id):
                 setattr(obj, k, obj_data[k])
         obj.save()
         return jsonify(obj.to_dict()), 200
-
