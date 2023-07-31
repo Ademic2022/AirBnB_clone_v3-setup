@@ -71,4 +71,3 @@ def link_place_amenity(place_id, amenity_id):
     place.amenities.append(amenity)
     storage.save()
     return jsonify(amenity.to_dict()), 201
-
