@@ -39,9 +39,9 @@ class TestCommand(unittest.TestCase):
                                  ' password="jesustakethewheel"')
         result = f.getvalue().strip()
         self.assertRegex(result, opt)
-        email = storage.all()[f'User.{result}'].email
+        email = storage.all()['User.{}'.format(result)].email
         self.assertEqual(email, "cluck@wanadoo.fr")
-        password = storage.all()[f'User.{result}'].password
+        password = storage.all()['User.{}'.format(result)].password
         self.assertEqual(password, "jesustakethewheel")
         with patch('sys.stdout', new=io.StringIO()) as f:
             HBNBCommand().onecmd('create State johnny="bravo"'
