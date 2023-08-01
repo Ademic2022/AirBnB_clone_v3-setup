@@ -2,11 +2,11 @@
 '''
     RESTful API for linking Place and Amenity objects
 '''
+from api.v1.views import app_views
 from flask import Flask, jsonify, abort, request
 from models import storage
-from api.v1.views import app_views
-from models.place import Place
 from models.amenity import Amenity
+from models.place import Place
 
 
 @app_views.route(

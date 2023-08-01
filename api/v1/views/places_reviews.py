@@ -2,9 +2,9 @@
 '''
     RESTful API for class Review
 '''
+from api.v1.views import app_views
 from flask import Flask, jsonify, abort, request
 from models import storage
-from api.v1.views import app_views
 from models.review import Review
 
 

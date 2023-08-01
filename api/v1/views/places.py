@@ -2,9 +2,9 @@
 '''
     RESTful API for class Place
 '''
+from api.v1.views import app_views
 from flask import Flask, jsonify, abort, request
 from models import storage
-from api.v1.views import app_views
 from models.place import Place
 
 
@@ -90,6 +90,7 @@ def update_place(place_id):
     obj.save()
     return jsonify(obj.to_dict()), 200
 
+
 @app_views.route('/places_search', methods=['POST'], strict_slashes=False)
 def places_search():
     """Retrieves all Place objects depending on the JSON in the request"""
@@ -119,6 +120,7 @@ def places_search():
 
     if amenities:
         amenities_set = set(amenities)
-        places = [place for place in places if amenities_set.issubset(place.amenities)]
+        places = [place for place in places
+                  if amenities_set.issubset(place.amenities)]
 
     return jsonify([place.to_dict() for place in places])
