@@ -49,4 +49,3 @@ class User(BaseModel, Base):
         if "password" in self.__dict__:
             self.password = hashlib.md5(self.password.encode()).hexdigest()
         super().save()
-        
