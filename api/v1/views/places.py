@@ -124,3 +124,4 @@ def places_search():
                   if amenities_set.issubset(place.amenities)]
 
     return jsonify([place.to_dict() for place in places])
+
